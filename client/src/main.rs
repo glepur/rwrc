@@ -28,13 +28,16 @@ fn main() {
       .set_touch_coordinates(touch.client_x() as f64, touch.client_y() as f64);
   }));
 
-  window().add_event_listener(enclose!( (graphics) move |_: TouchStart| {
-    graphics.borrow_mut().animate(graphics.clone());
+  window().add_event_listener(enclose!( (graphics) move |event: TouchStart| {
+    let touch = &event.touches()[0];
+    let distance_from_center = graphics.borrow().distance_from_center(touch.client_x() as f64, touch.client_y() as f64);
+    if distance_from_center < graphics.borrow().center_radius() {
+      graphics.borrow_mut().set_touch_coordinates(touch.client_x() as f64, touch.client_y() as f64);
+      graphics.borrow_mut().animate(graphics.clone());
+    }
   }));
 
   window().add_event_listener(enclose!( (graphics) move |_: TouchEnd| {
     graphics.borrow_mut().stop_animate();
   }));
-
-  stdweb::event_loop();
 }
