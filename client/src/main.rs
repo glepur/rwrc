@@ -9,10 +9,10 @@ use stdweb::web::window;
 
 macro_rules! enclose {
   ( ($( $x:ident ),*) $y:expr ) => {
-      {
-          $(let $x = $x.clone();)*
-          $y
-      }
+    {
+      $(let $x = $x.clone();)*
+      $y
+    }
   };
 }
 
@@ -30,9 +30,10 @@ fn main() {
 
   window().add_event_listener(enclose!( (graphics) move |event: TouchStart| {
     let touch = &event.touches()[0];
-    let distance_from_center = graphics.borrow().distance_from_center(touch.client_x() as f64, touch.client_y() as f64);
-    if distance_from_center < graphics.borrow().center_radius() {
-      graphics.borrow_mut().set_touch_coordinates(touch.client_x() as f64, touch.client_y() as f64);
+    let x = touch.client_x() as f64;
+    let y = touch.client_y() as f64;
+    if graphics.borrow().should_animate(x, y) {
+      graphics.borrow_mut().set_touch_coordinates(x, y);
       graphics.borrow_mut().animate(graphics.clone());
     }
   }));

@@ -85,14 +85,6 @@ impl Graphics {
     self.draw_circle(&self.center);
   }
 
-  pub fn center_radius(&self) -> f64 {
-    self.center.radius
-  }
-
-  pub fn distance_from_center(&self, x: f64, y: f64) -> f64 {
-    distance(&self.center.coordinates, &Coordinates { x, y })
-  }
-
   pub fn draw_pointer(&self) {
     self.draw_circle(&self.pointer_circle);
     self.draw_line(self.pointer_line.start, self.pointer_line.end);
@@ -113,6 +105,10 @@ impl Graphics {
     self.pointer_circle.radius = distance(&self.pointer_line.start, &self.pointer_line.end);
   }
 
+  pub fn should_animate(&self, x: f64, y: f64) -> bool {
+    distance(&self.center.coordinates, &Coordinates { x, y }) < self.center.radius
+  }
+
   pub fn animate(&mut self, rc: Rc<RefCell<Self>>) {
     self.clear();
     self.draw_pointer();
@@ -126,7 +122,6 @@ impl Graphics {
     self.draw_center();
     if self.request_animation_frame_handle.is_some() {
       self.request_animation_frame_handle.take().unwrap().cancel();
-      self.request_animation_frame_handle = None;
     };
   }
 
