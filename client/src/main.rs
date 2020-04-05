@@ -18,8 +18,9 @@ macro_rules! enclose {
 
 fn main() {
   let graphics = Rc::new(RefCell::new(Graphics::new()));
-  graphics.borrow().draw_center();
-  graphics.borrow().draw_pointer();
+  let graphics_i = graphics.borrow();
+  graphics_i.draw_center();
+  graphics_i.draw_pointer();
 
   window().add_event_listener(enclose!( (graphics) move |event: TouchMove| {
     let touch = &event.touches()[0];
@@ -29,12 +30,13 @@ fn main() {
   }));
 
   window().add_event_listener(enclose!( (graphics) move |event: TouchStart| {
+    let mut graphics_m = graphics.borrow_mut();
     let touch = &event.touches()[0];
     let x = touch.client_x() as f64;
     let y = touch.client_y() as f64;
-    if graphics.borrow().should_animate(x, y) {
-      graphics.borrow_mut().set_touch_coordinates(x, y);
-      graphics.borrow_mut().animate(graphics.clone());
+    if graphics_m.should_animate(x, y) {
+      graphics_m.set_touch_coordinates(x, y);
+      graphics_m.animate(graphics.clone());
     }
   }));
 
