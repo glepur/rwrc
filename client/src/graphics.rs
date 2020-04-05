@@ -90,7 +90,7 @@ impl Graphics {
     self.draw_line(self.pointer_line.start, self.pointer_line.end);
   }
 
-  pub fn clear(&self) {
+  fn clear(&self) {
     let context: CanvasRenderingContext2d = self.canvas.get_context().unwrap();
     context.clear_rect(
       0.0,
@@ -106,10 +106,17 @@ impl Graphics {
   }
 
   pub fn animate(&mut self, rc: Rc<RefCell<Self>>) {
+    self.clear();
     self.draw_pointer();
     self.draw_center();
     self.request_animation_frame_handle =
-      Some(window().request_animation_frame(move |_| rc.borrow_mut().animate(rc.clone())))
+      Some(window().request_animation_frame(move |_| rc.borrow_mut().animate(rc.clone())));
+  }
+
+  pub fn stop_animate(&mut self) {
+    if let Some(handle) = &self.request_animation_frame_handle {
+      handle.cancel();
+    };
   }
 
   fn draw_circle(&self, circle: &Circle) {
