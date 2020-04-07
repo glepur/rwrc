@@ -29,7 +29,7 @@ fn main() {
   window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchMove| {
     let touch = &event.touches()[0];
     let (x, y) = get_touch_coordinates(touch);
-    transmitter.borrow().send(x, y);
+    transmitter.borrow_mut().send(x, y);
     graphics
       .borrow_mut()
       .set_touch_coordinates(x, y);
