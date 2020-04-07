@@ -1,11 +1,13 @@
 mod graphics;
+mod transmitter;
 
 use graphics::Graphics;
 use std::cell::RefCell;
 use std::rc::Rc;
 use stdweb::traits::*;
 use stdweb::web::event::{TouchEnd, TouchMove, TouchStart};
-use stdweb::web::window;
+use stdweb::web::{window, Touch};
+use transmitter::Transmitter;
 
 macro_rules! enclose {
   ( ($( $x:ident ),*) $y:expr ) => {
@@ -22,25 +24,34 @@ fn main() {
   graphics_i.draw_center();
   graphics_i.draw_pointer();
 
-  window().add_event_listener(enclose!( (graphics) move |event: TouchMove| {
+  let transmitter = Rc::new(RefCell::new(Transmitter::new()));
+
+  window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchMove| {
     let touch = &event.touches()[0];
+    let (x, y) = get_touch_coordinates(touch);
+    transmitter.borrow().send(x, y);
     graphics
       .borrow_mut()
-      .set_touch_coordinates(touch.client_x() as f64, touch.client_y() as f64);
+      .set_touch_coordinates(x, y);
   }));
 
-  window().add_event_listener(enclose!( (graphics) move |event: TouchStart| {
+  window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchStart| {
     let mut graphics_m = graphics.borrow_mut();
     let touch = &event.touches()[0];
-    let x = touch.client_x() as f64;
-    let y = touch.client_y() as f64;
+    let (x, y) = get_touch_coordinates(touch);
     if graphics_m.should_animate(x, y) {
+      transmitter.borrow_mut().activate();
       graphics_m.set_touch_coordinates(x, y);
       graphics_m.animate(graphics.clone());
     }
   }));
 
-  window().add_event_listener(enclose!( (graphics) move |_: TouchEnd| {
+  window().add_event_listener(enclose!( (graphics, transmitter) move |_: TouchEnd| {
+    transmitter.borrow_mut().deactivate();
     graphics.borrow_mut().stop_animate();
   }));
+}
+
+fn get_touch_coordinates(touch: &Touch) -> (f64, f64) {
+  (touch.client_x() as f64, touch.client_y() as f64)
 }

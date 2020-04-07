@@ -40,7 +40,7 @@ struct Coordinates {
 }
 
 impl Graphics {
-  pub fn new() -> Graphics {
+  pub fn new() -> Self {
     stdweb::initialize();
 
     let canvas: CanvasElement = document()
