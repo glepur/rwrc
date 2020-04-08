@@ -23,9 +23,8 @@ impl Transmitter {
     }
   }
 
-  pub fn activate(rc: Rc<RefCell<Transmitter>>) {
-    rc.borrow_mut().activated = true;
-    rc.borrow().start_emit(rc.clone());
+  pub fn activate(&mut self) {
+    self.activated = true;
   }
 
   pub fn deactivate(&mut self) {

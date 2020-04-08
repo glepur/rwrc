@@ -40,7 +40,9 @@ fn main() {
     let touch = &event.touches()[0];
     let (x, y) = get_touch_coordinates(touch);
     if graphics_m.should_animate(x, y) {
-      Transmitter::activate(transmitter.clone());
+      transmitter.borrow_mut().update(x, y);
+      transmitter.borrow_mut().activate();
+      transmitter.borrow().start_emit(transmitter.clone());
       graphics_m.set_touch_coordinates(x, y);
       graphics_m.animate(graphics.clone());
     }
