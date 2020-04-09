@@ -4,15 +4,16 @@ use std::rc::Rc;
 use stdweb::console;
 use stdweb::traits::*;
 use stdweb::web::set_timeout;
-use stdweb::web::WebSocket;
+use stdweb::web::{SocketReadyState, WebSocket};
 
-use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketOpenEvent};
+use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketMessageEvent, SocketOpenEvent};
 
 const THROTTLE_TIME_MILIS: u32 = 100;
 
 pub struct Transmitter {
   ws: WebSocket,
   activated: bool,
+  should_emit: bool,
   coordinates: Coordinates,
 }
 
@@ -30,6 +31,7 @@ impl Transmitter {
     Transmitter {
       ws,
       activated: false,
+      should_emit: false,
       coordinates: Coordinates { x: 0.0, y: 0.0 },
     }
   }
@@ -46,6 +48,10 @@ impl Transmitter {
     ws.add_event_listener(|event: SocketCloseEvent| {
       console!(error, "Connection closed: {}", event.reason());
     });
+
+    ws.add_event_listener(|event: SocketMessageEvent| {
+      console!(log, "{}", event.data().into_text().unwrap());
+    });
   }
 
   pub fn activate(&mut self) {
@@ -58,11 +64,13 @@ impl Transmitter {
 
   pub fn start_emit(&self, rc: Rc<RefCell<Transmitter>>) {
     let Coordinates { x, y } = rc.borrow().coordinates;
-    let message = object! {
-      x: x,
-      y: y
-    };
-    self.ws.send_text(&message.dump()).unwrap();
+    if self.ws.ready_state() == SocketReadyState::Open && self.should_emit {
+      let message = object! {
+        x: x,
+        y: y
+      };
+      self.ws.send_text(&message.dump()).unwrap();
+    }
     if self.activated {
       set_timeout(
         move || rc.borrow().start_emit(rc.clone()),
@@ -71,7 +79,8 @@ impl Transmitter {
     }
   }
 
-  pub fn update(&mut self, x: f64, y: f64) {
+  pub fn update(&mut self, x: f64, y: f64, should_emit: bool) {
     self.coordinates = Coordinates { x, y };
+    self.should_emit = should_emit;
   }
 }

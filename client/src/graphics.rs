@@ -105,7 +105,7 @@ impl Graphics {
     self.pointer_circle.radius = distance(&self.pointer_line.start, &self.pointer_line.end);
   }
 
-  pub fn should_animate(&self, x: f64, y: f64) -> bool {
+  pub fn is_inside_center(&self, x: f64, y: f64) -> bool {
     distance(&self.center.coordinates, &Coordinates { x, y }) < self.center.radius
   }
 
