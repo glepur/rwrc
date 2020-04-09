@@ -29,10 +29,11 @@ fn main() {
   window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchMove| {
     let touch = &event.touches()[0];
     let (x, y) = get_touch_coordinates(touch);
-    transmitter.borrow_mut().update(x, y);
     graphics
       .borrow_mut()
       .set_touch_coordinates(x, y);
+    let (x, y) = graphics.borrow().offset_from_center();
+    transmitter.borrow_mut().update(x, y);
   }));
 
   window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchStart| {

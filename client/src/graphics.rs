@@ -162,18 +162,28 @@ impl Graphics {
     context.stroke();
     context.restore();
   }
+
+  pub fn offset_from_center(&self) -> (f64, f64) {
+    get_offset(&self.center.coordinates, &self.pointer_line.end)
+  }
+}
+
+fn get_offset(start: &Coordinates, end: &Coordinates) -> (f64, f64) {
+  (
+    if start.x < end.x {
+      end.x - start.x
+    } else {
+      start.x - end.x
+    },
+    if start.y < end.y {
+      end.y - start.y
+    } else {
+      start.y - end.y
+    },
+  )
 }
 
 fn distance(start: &Coordinates, end: &Coordinates) -> f64 {
-  let abs_x = if start.x < end.x {
-    (end.x - start.x).abs()
-  } else {
-    (start.x - end.x).abs()
-  };
-  let abs_y = if start.y < end.y {
-    end.y - start.y
-  } else {
-    start.y - end.y
-  };
-  (abs_x.powf(2.0) + abs_y.powf(2.0)).sqrt()
+  let (x, y) = get_offset(&start, &end);
+  (x.powf(2.0) + y.powf(2.0)).sqrt()
 }
