@@ -1,7 +1,11 @@
+extern crate dotenv;
+
 use actix_web::body::Body;
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use dotenv::dotenv;
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
+use std::env;
 
 use std::borrow::Cow;
 
@@ -34,13 +38,15 @@ fn dist(req: HttpRequest) -> HttpResponse {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+  dotenv().ok();
+  let port = env::var("PORT").unwrap();
   HttpServer::new(|| {
     App::new()
       .service(web::resource("/").route(web::get().to(index)))
       .service(web::resource("/{_:.*}").route(web::get().to(dist)))
   })
   // TODO: read port from mutual config
-  .bind("0.0.0.0:1337")?
+  .bind(format!("0.0.0.0:{}", port))?
   .run()
   .await
 }
