@@ -24,7 +24,8 @@ fn main() {
   graphics_i.draw_center();
   graphics_i.draw_pointer();
 
-  let transmitter = Rc::new(RefCell::new(Transmitter::new()));
+  let ws_host = window().location().unwrap().host().unwrap();
+  let transmitter = Rc::new(RefCell::new(Transmitter::new(&ws_host)));
 
   window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchMove| {
     let touch = &event.touches()[0];

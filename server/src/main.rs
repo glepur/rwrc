@@ -1,17 +1,82 @@
 extern crate dotenv;
 
+use actix::prelude::*;
 use actix_web::body::Body;
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web_actors::ws;
 use dotenv::dotenv;
+use json::parse;
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
 use std::env;
+use std::time::{Duration, Instant};
 
 use std::borrow::Cow;
+
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+
+async fn ws_index(r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+  println!("{:?}", r);
+  let res = ws::start(MyWebSocket::new(), &r, stream);
+  println!("{:?}", res);
+  res
+}
 
 #[derive(RustEmbed)]
 #[folder = "../client/target/deploy/"]
 struct Asset;
+
+struct MyWebSocket {
+  hb: Instant,
+}
+
+impl Actor for MyWebSocket {
+  type Context = ws::WebsocketContext<Self>;
+
+  fn started(&mut self, ctx: &mut Self::Context) {
+    self.hb(ctx);
+  }
+}
+
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
+  fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+    match msg {
+      Ok(ws::Message::Ping(msg)) => {
+        self.hb = Instant::now();
+        ctx.pong(&msg);
+      }
+      Ok(ws::Message::Pong(_)) => {
+        self.hb = Instant::now();
+      }
+      Ok(ws::Message::Text(text)) => {
+        let payload = parse(&text).unwrap();
+        println!("{},{}", payload["x"], payload["y"]);
+      }
+      Ok(ws::Message::Binary(_)) => (),
+      Ok(ws::Message::Close(_)) => {
+        ctx.stop();
+      }
+      _ => ctx.stop(),
+    }
+  }
+}
+
+impl MyWebSocket {
+  fn new() -> Self {
+    Self { hb: Instant::now() }
+  }
+
+  fn hb(&self, ctx: &mut <Self as Actor>::Context) {
+    ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+      if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+        println!("Websocket Client heartbeat failed, disconnecting!");
+        ctx.stop();
+        return;
+      }
+    });
+  }
+}
 
 fn handle_embedded_file(path: &str) -> HttpResponse {
   match Asset::get(path) {
@@ -38,14 +103,17 @@ fn dist(req: HttpRequest) -> HttpResponse {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+  std::env::set_var("RUST_LOG", "actix_server=info,actix_web=info");
+  env_logger::init();
   dotenv().ok();
   let port = env::var("PORT").unwrap();
   HttpServer::new(|| {
     App::new()
+      .wrap(middleware::Logger::default())
+      .service(web::resource("/ws/").route(web::get().to(ws_index)))
       .service(web::resource("/").route(web::get().to(index)))
       .service(web::resource("/{_:.*}").route(web::get().to(dist)))
   })
-  // TODO: read port from mutual config
   .bind(format!("0.0.0.0:{}", port))?
   .run()
   .await

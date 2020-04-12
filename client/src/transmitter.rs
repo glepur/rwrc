@@ -11,6 +11,7 @@ use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketMessageEvent,
 const THROTTLE_TIME_MILIS: u32 = 100;
 
 pub struct Transmitter {
+  ws_url: String,
   ws: WebSocket,
   activated: bool,
   should_emit: bool,
@@ -23,17 +24,25 @@ struct Coordinates {
 }
 
 impl Transmitter {
-  pub fn new() -> Self {
-    let ws = WebSocket::new("wss://echo.websocket.org").expect("Could not establish connection.");
-
-    Transmitter::attach_ws_callbacks(&ws);
-
-    Transmitter {
-      ws,
+  pub fn new(ws: &str) -> Self {
+    let ws_url = format!("ws://{}/ws/", ws);
+    let transmitter = Transmitter {
+      ws_url: ws_url.clone(),
+      ws: Transmitter::new_socket(&ws_url),
       activated: false,
       should_emit: false,
       coordinates: Coordinates { x: 0.0, y: 0.0 },
-    }
+    };
+    Transmitter::attach_ws_callbacks(&transmitter.ws);
+    transmitter
+  }
+
+  fn new_socket(ws: &str) -> WebSocket {
+    WebSocket::new(ws).expect("Could not establish connection.")
+  }
+
+  fn reconnect(&mut self) {
+    self.ws = Transmitter::new_socket(&self.ws_url);
   }
 
   fn attach_ws_callbacks(ws: &WebSocket) {
@@ -60,6 +69,9 @@ impl Transmitter {
 
   pub fn deactivate(&mut self) {
     self.activated = false;
+    if self.ws.ready_state() == SocketReadyState::Closed {
+      self.reconnect();
+    }
   }
 
   pub fn start_emit(&self, rc: Rc<RefCell<Transmitter>>) {
