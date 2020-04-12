@@ -8,7 +8,8 @@ use stdweb::web::{SocketReadyState, WebSocket};
 
 use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketMessageEvent, SocketOpenEvent};
 
-const THROTTLE_TIME_MILIS: u32 = 100;
+const THROTTLE_TIME_MILIS: u32 = 5;
+const SENSITIVITY: u32 = 10;
 
 pub struct Transmitter {
   ws_url: String,
@@ -19,19 +20,19 @@ pub struct Transmitter {
 }
 
 struct Coordinates {
-  x: f64,
-  y: f64,
+  x: i32,
+  y: i32,
 }
 
 impl Transmitter {
   pub fn new(ws: &str) -> Self {
     let ws_url = format!("ws://{}/ws/", ws);
-    let transmitter = Transmitter {
+    let transmitter = Self {
       ws_url: ws_url.clone(),
       ws: Transmitter::new_socket(&ws_url),
       activated: false,
       should_emit: false,
-      coordinates: Coordinates { x: 0.0, y: 0.0 },
+      coordinates: Coordinates { x: 0, y: 0 },
     };
     Transmitter::attach_ws_callbacks(&transmitter.ws);
     transmitter
@@ -75,7 +76,7 @@ impl Transmitter {
   }
 
   pub fn start_emit(&self, rc: Rc<RefCell<Transmitter>>) {
-    let Coordinates { x, y } = rc.borrow().coordinates;
+    let Coordinates { x, y } = rc.borrow().get_adapted_coordinates();
     if self.ws.ready_state() == SocketReadyState::Open && self.should_emit {
       let message = object! {
         x: x,
@@ -86,12 +87,23 @@ impl Transmitter {
     if self.activated {
       set_timeout(
         move || rc.borrow().start_emit(rc.clone()),
-        THROTTLE_TIME_MILIS,
+        THROTTLE_TIME_MILIS as u32,
       );
     }
   }
 
-  pub fn update(&mut self, x: f64, y: f64, should_emit: bool) {
+  fn get_adapted_coordinates(&self) -> Coordinates {
+    let x: f64 =
+      self.coordinates.x as f64 / 100.0 / THROTTLE_TIME_MILIS as f64 * SENSITIVITY as f64;
+    let y: f64 =
+      self.coordinates.y as f64 / 100.0 / THROTTLE_TIME_MILIS as f64 * SENSITIVITY as f64;
+    Coordinates {
+      x: x as i32,
+      y: y as i32,
+    }
+  }
+
+  pub fn update(&mut self, x: i32, y: i32, should_emit: bool) {
     self.coordinates = Coordinates { x, y };
     self.should_emit = should_emit;
   }

@@ -57,7 +57,7 @@ impl Graphics {
       y: canvas.height() as f64 / 2.0,
     };
 
-    Graphics {
+    Self {
       center: Circle {
         coordinates: center,
         radius: canvas.width() as f64 * CENTER_RADIUS_RATIO,
@@ -169,18 +169,7 @@ impl Graphics {
 }
 
 fn get_offset(start: &Coordinates, end: &Coordinates) -> (f64, f64) {
-  (
-    if start.x < end.x {
-      end.x - start.x
-    } else {
-      start.x - end.x
-    },
-    if start.y < end.y {
-      end.y - start.y
-    } else {
-      start.y - end.y
-    },
-  )
+  (end.x - start.x, end.y - start.y)
 }
 
 fn distance(start: &Coordinates, end: &Coordinates) -> f64 {

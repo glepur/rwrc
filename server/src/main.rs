@@ -5,6 +5,7 @@ use actix_web::body::Body;
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use dotenv::dotenv;
+use enigo::*;
 use json::parse;
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
@@ -14,7 +15,7 @@ use std::time::{Duration, Instant};
 use std::borrow::Cow;
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
-const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(300);
 
 async fn ws_index(r: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
   println!("{:?}", r);
@@ -29,6 +30,7 @@ struct Asset;
 
 struct MyWebSocket {
   hb: Instant,
+  enigo: Enigo,
 }
 
 impl Actor for MyWebSocket {
@@ -51,7 +53,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
       }
       Ok(ws::Message::Text(text)) => {
         let payload = parse(&text).unwrap();
-        println!("{},{}", payload["x"], payload["y"]);
+        println!("Received coordinates: {}, {}", payload["x"], payload["y"]);
+        self.enigo.mouse_move_relative(
+          payload["x"].as_i32().unwrap(),
+          payload["y"].as_i32().unwrap(),
+        );
       }
       Ok(ws::Message::Binary(_)) => (),
       Ok(ws::Message::Close(_)) => {
@@ -64,7 +70,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
 
 impl MyWebSocket {
   fn new() -> Self {
-    Self { hb: Instant::now() }
+    Self {
+      hb: Instant::now(),
+      enigo: Enigo::new(),
+    }
   }
 
   fn hb(&self, ctx: &mut <Self as Actor>::Context) {

@@ -35,7 +35,7 @@ fn main() {
       .set_touch_coordinates(x, y);
     let (dx, dy) = graphics.borrow().offset_from_center();
     let should_emit = !graphics.borrow().is_inside_center(x, y);
-    transmitter.borrow_mut().update(dx, dy, should_emit);
+    transmitter.borrow_mut().update(dx as i32, dy as i32, should_emit);
   }));
 
   window().add_event_listener(enclose!( (graphics, transmitter) move |event: TouchStart| {
@@ -44,7 +44,7 @@ fn main() {
     let (x, y) = get_touch_coordinates(touch);
     let is_inside_center = graphics_m.is_inside_center(x, y);
     if is_inside_center {
-      transmitter.borrow_mut().update(x, y, !is_inside_center);
+      transmitter.borrow_mut().update(0, 0, !is_inside_center);
       transmitter.borrow_mut().activate();
       transmitter.borrow().start_emit(transmitter.clone());
       graphics_m.set_touch_coordinates(x, y);
