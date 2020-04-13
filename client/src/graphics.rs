@@ -6,7 +6,7 @@ use stdweb::web::html_element::CanvasElement;
 use stdweb::web::FillRule;
 use stdweb::web::{document, window, CanvasRenderingContext2d, RequestAnimationFrameHandle};
 
-const CENTER_RADIUS_RATIO: f64 = 0.15;
+const CENTER_RADIUS_RATIO: f64 = 0.11;
 const CENTER_COLOR: &'static str = "#333";
 
 const POINTER_LINE_WIDTH: f64 = 8.0;
@@ -164,7 +164,19 @@ impl Graphics {
   }
 
   pub fn offset_from_center(&self) -> (f64, f64) {
-    get_offset(&self.center.coordinates, &self.pointer_line.end)
+    let (x, y) = get_offset(&self.center.coordinates, &self.pointer_line.end);
+    (
+      if x < 0.0 {
+        x - self.center.radius
+      } else {
+        x + self.center.radius
+      },
+      if y < 0.0 {
+        y - self.center.radius
+      } else {
+        y + self.center.radius
+      },
+    )
   }
 }
 

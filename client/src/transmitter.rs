@@ -93,10 +93,13 @@ impl Transmitter {
   }
 
   fn get_adapted_coordinates(&self) -> Coordinates {
-    let x: f64 =
-      self.coordinates.x as f64 / 100.0 / THROTTLE_TIME_MILIS as f64 * SENSITIVITY as f64;
-    let y: f64 =
-      self.coordinates.y as f64 / 100.0 / THROTTLE_TIME_MILIS as f64 * SENSITIVITY as f64;
+    let adapt = |num: f64| {
+      let powered = num.abs().powf(1.6);
+      (if num < 0.0 { -powered } else { powered }) / 10_000.0 / THROTTLE_TIME_MILIS as f64
+        * SENSITIVITY as f64
+    };
+    let x: f64 = adapt(self.coordinates.x as f64);
+    let y: f64 = adapt(self.coordinates.y as f64);
     Coordinates {
       x: x as i32,
       y: y as i32,
