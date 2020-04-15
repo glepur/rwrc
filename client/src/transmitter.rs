@@ -8,7 +8,7 @@ use stdweb::web::{SocketReadyState, WebSocket};
 
 use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketMessageEvent, SocketOpenEvent};
 
-const THROTTLE_TIME_MILIS: u32 = 5;
+const THROTTLE_TIME_MILIS: u32 = 20;
 const SENSITIVITY: u32 = 10;
 
 pub struct Transmitter {
@@ -94,9 +94,14 @@ impl Transmitter {
 
   fn get_adapted_coordinates(&self) -> Coordinates {
     let adapt = |num: f64| {
-      let powered = num.abs().powf(1.6);
-      (if num < 0.0 { -powered } else { powered }) / 10_000.0 / THROTTLE_TIME_MILIS as f64
-        * SENSITIVITY as f64
+      let adapted = (num / 100.0 / THROTTLE_TIME_MILIS as f64 * SENSITIVITY as f64)
+        .abs()
+        .powf(2.5);
+      if num < 0.0 {
+        -adapted
+      } else {
+        adapted
+      }
     };
     let x: f64 = adapt(self.coordinates.x as f64);
     let y: f64 = adapt(self.coordinates.y as f64);
