@@ -22,7 +22,7 @@ fn main() {
   let graphics = Rc::new(RefCell::new(Graphics::new()));
   let graphics_i = graphics.borrow();
   graphics_i.draw_center();
-  graphics_i.draw_pointer();
+  graphics_i.draw_buttons();
 
   let ws_host = window().location().unwrap().host().unwrap();
   let transmitter = Rc::new(RefCell::new(Transmitter::new(&ws_host)));

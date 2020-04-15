@@ -1,6 +1,8 @@
+mod button;
 mod circle;
 mod line;
 
+use button::Button;
 use circle::Circle;
 use line::Line;
 use std::cell::RefCell;
@@ -16,11 +18,18 @@ const CENTER_COLOR: &'static str = "#333";
 const POINTER_LINE_WIDTH: f64 = 8.0;
 const POINTER_COLOR: &'static str = "green";
 
+const BUTTON_COLOR: &'static str = "#333";
+const BUTTON_WIDTH_RATIO: f64 = 0.3;
+const BUTTON_HEIGHT_RATIO: f64 = 0.15;
+const BUTTON_MARGIN_RATIO: f64 = 0.05;
+
 pub struct Graphics {
   canvas: CanvasElement,
   center: Circle,
   pointer_circle: Circle,
   pointer_line: Line,
+  left_button: Button,
+  right_button: Button,
   request_animation_frame_handle: Option<RequestAnimationFrameHandle>,
 }
 
@@ -44,9 +53,23 @@ impl Graphics {
     canvas.set_width(canvas.offset_width() as u32);
     canvas.set_height(canvas.offset_height() as u32);
     let center_radius = canvas.width() as f64 * CENTER_RADIUS_RATIO;
-    let center = Coordinates {
+    let canvas_center = Coordinates {
       x: canvas.width() as f64 / 2.0,
-      y: canvas.height() as f64 / 2.0 - center_radius,
+      y: canvas.height() as f64 / 2.0,
+    };
+
+    let mut center = canvas_center.clone();
+    center.y -= center_radius;
+
+    let button_margin = canvas.width() as f64 * BUTTON_MARGIN_RATIO;
+    let button = Button {
+      coordinates: Coordinates {
+        x: 0.0,
+        y: canvas_center.y + (button_margin * 2.0),
+      },
+      width: canvas.width() as f64 * BUTTON_WIDTH_RATIO,
+      height: canvas.width() as f64 * BUTTON_HEIGHT_RATIO,
+      color: BUTTON_COLOR,
     };
 
     Self {
@@ -70,6 +93,24 @@ impl Graphics {
         width: POINTER_LINE_WIDTH,
         color: POINTER_COLOR,
       },
+      left_button: Button {
+        coordinates: Coordinates {
+          x: canvas_center.x - button.width - (button_margin / 2.0),
+          y: button.coordinates.y,
+        },
+        height: button.height,
+        width: button.width,
+        color: button.color,
+      },
+      right_button: Button {
+        coordinates: Coordinates {
+          x: canvas_center.x + (button_margin / 2.0),
+          y: button.coordinates.y,
+        },
+        height: button.height,
+        width: button.width,
+        color: button.color,
+      },
       canvas: canvas,
       request_animation_frame_handle: None,
     }
@@ -82,6 +123,11 @@ impl Graphics {
   pub fn draw_pointer(&self) {
     self.pointer_circle.draw(&self.canvas);
     self.pointer_line.draw(&self.canvas);
+  }
+
+  pub fn draw_buttons(&self) {
+    self.left_button.draw(&self.canvas);
+    self.right_button.draw(&self.canvas);
   }
 
   fn clear(&self) {
@@ -105,6 +151,7 @@ impl Graphics {
 
   pub fn animate(&mut self, rc: Rc<RefCell<Self>>) {
     self.clear();
+    self.draw_buttons();
     self.draw_pointer();
     self.draw_center();
     self.request_animation_frame_handle =
@@ -114,6 +161,7 @@ impl Graphics {
   pub fn stop_animate(&mut self) {
     self.clear();
     self.draw_center();
+    self.draw_buttons();
     if self.request_animation_frame_handle.is_some() {
       self.request_animation_frame_handle.take().unwrap().cancel();
     };
