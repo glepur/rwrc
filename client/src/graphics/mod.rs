@@ -1,9 +1,13 @@
+mod circle;
+mod line;
+
+use circle::Circle;
+use line::Line;
 use std::cell::RefCell;
 use std::rc::Rc;
 use stdweb::traits::*;
 use stdweb::unstable::TryInto;
 use stdweb::web::html_element::CanvasElement;
-use stdweb::web::FillRule;
 use stdweb::web::{document, window, CanvasRenderingContext2d, RequestAnimationFrameHandle};
 
 const CENTER_RADIUS_RATIO: f64 = 0.11;
@@ -20,21 +24,8 @@ pub struct Graphics {
   request_animation_frame_handle: Option<RequestAnimationFrameHandle>,
 }
 
-struct Circle {
-  coordinates: Coordinates,
-  radius: f64,
-  fill_color: Option<&'static str>,
-  stroke_width: Option<f64>,
-  stroke_color: Option<&'static str>,
-}
-
-struct Line {
-  start: Coordinates,
-  end: Coordinates,
-}
-
 #[derive(Copy, Clone)]
-struct Coordinates {
+pub struct Coordinates {
   x: f64,
   y: f64,
 }
@@ -76,6 +67,8 @@ impl Graphics {
       pointer_line: Line {
         start: center,
         end: center,
+        width: POINTER_LINE_WIDTH,
+        color: POINTER_COLOR,
       },
       canvas: canvas,
       request_animation_frame_handle: None,
@@ -83,12 +76,12 @@ impl Graphics {
   }
 
   pub fn draw_center(&self) {
-    self.draw_circle(&self.center);
+    self.center.draw(&self.canvas);
   }
 
   pub fn draw_pointer(&self) {
-    self.draw_circle(&self.pointer_circle);
-    self.draw_line(self.pointer_line.start, self.pointer_line.end);
+    self.pointer_circle.draw(&self.canvas);
+    self.pointer_line.draw(&self.canvas);
   }
 
   fn clear(&self) {
@@ -124,44 +117,6 @@ impl Graphics {
     if self.request_animation_frame_handle.is_some() {
       self.request_animation_frame_handle.take().unwrap().cancel();
     };
-  }
-
-  fn draw_circle(&self, circle: &Circle) {
-    let context: CanvasRenderingContext2d = self.canvas.get_context().unwrap();
-    context.save();
-    context.begin_path();
-    context.arc(
-      circle.coordinates.x,
-      circle.coordinates.y,
-      circle.radius,
-      0.0,
-      2.0 * std::f64::consts::PI,
-      false,
-    );
-    if let Some(color) = circle.fill_color {
-      context.set_fill_style_color(color);
-      context.fill(FillRule::default());
-    }
-    if let Some(stroke_width) = circle.stroke_width {
-      context.set_line_width(stroke_width);
-    }
-    if let Some(stroke_color) = circle.stroke_color {
-      context.set_stroke_style_color(stroke_color);
-    }
-    context.stroke();
-    context.restore();
-  }
-
-  fn draw_line(&self, start: Coordinates, end: Coordinates) {
-    let context: CanvasRenderingContext2d = self.canvas.get_context().unwrap();
-    context.save();
-    context.begin_path();
-    context.set_line_width(POINTER_LINE_WIDTH);
-    context.set_stroke_style_color(POINTER_COLOR);
-    context.move_to(start.x, start.y);
-    context.line_to(end.x, end.y);
-    context.stroke();
-    context.restore();
   }
 
   pub fn offset_from_center(&self) -> (f64, f64) {
