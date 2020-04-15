@@ -52,15 +52,16 @@ impl Graphics {
 
     canvas.set_width(canvas.offset_width() as u32);
     canvas.set_height(canvas.offset_height() as u32);
+    let center_radius = canvas.width() as f64 * CENTER_RADIUS_RATIO;
     let center = Coordinates {
       x: canvas.width() as f64 / 2.0,
-      y: canvas.height() as f64 / 2.0,
+      y: canvas.height() as f64 / 2.0 - center_radius,
     };
 
     Self {
       center: Circle {
         coordinates: center,
-        radius: canvas.width() as f64 * CENTER_RADIUS_RATIO,
+        radius: center_radius,
         fill_color: Some(CENTER_COLOR),
         stroke_color: None,
         stroke_width: None,
