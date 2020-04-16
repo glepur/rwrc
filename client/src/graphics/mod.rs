@@ -104,18 +104,14 @@ impl Graphics {
           x: canvas_center.x - button.width - (button_margin / 2.0),
           y: button.coordinates.y,
         },
-        height: button.height,
-        width: button.width,
-        color: button.color,
+        ..button
       },
       button_right: Button {
         coordinates: Coordinates {
           x: canvas_center.x + (button_margin / 2.0),
           y: button.coordinates.y,
         },
-        height: button.height,
-        width: button.width,
-        color: button.color,
+        ..button
       },
       canvas: canvas,
       request_animation_frame_handle: None,
