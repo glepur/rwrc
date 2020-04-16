@@ -26,4 +26,11 @@ impl Button {
     context.stroke();
     context.restore();
   }
+
+  pub fn contains(&self, x: f64, y: f64) -> bool {
+    x > self.coordinates.x
+      && x < self.coordinates.x + self.width
+      && y > self.coordinates.y
+      && y < self.coordinates.y + self.height
+  }
 }

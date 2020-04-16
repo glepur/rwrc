@@ -52,12 +52,18 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWebSocket {
         self.hb = Instant::now();
       }
       Ok(ws::Message::Text(text)) => {
-        let payload = parse(&text).unwrap();
-        println!("Received coordinates: {}, {}", payload["x"], payload["y"]);
-        self.enigo.mouse_move_relative(
-          payload["x"].as_i32().unwrap(),
-          payload["y"].as_i32().unwrap(),
-        );
+        let message = parse(&text).unwrap();
+        println!("Received message: {}", message);
+        let msg_type: &str = &message["type"].to_string();
+        match msg_type {
+          "move" => self.enigo.mouse_move_relative(
+            message["x"].as_i32().unwrap(),
+            message["y"].as_i32().unwrap(),
+          ),
+          "click_left" => self.enigo.mouse_click(MouseButton::Left),
+          "click_right" => self.enigo.mouse_click(MouseButton::Right),
+          _ => (),
+        };
       }
       Ok(ws::Message::Binary(_)) => (),
       Ok(ws::Message::Close(_)) => {

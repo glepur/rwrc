@@ -23,13 +23,19 @@ const BUTTON_WIDTH_RATIO: f64 = 0.3;
 const BUTTON_HEIGHT_RATIO: f64 = 0.15;
 const BUTTON_MARGIN_RATIO: f64 = 0.05;
 
+pub enum Element {
+  Center,
+  ButtonLeft,
+  ButtonRight,
+}
+
 pub struct Graphics {
   canvas: CanvasElement,
   center: Circle,
   pointer_circle: Circle,
   pointer_line: Line,
-  left_button: Button,
-  right_button: Button,
+  button_left: Button,
+  button_right: Button,
   request_animation_frame_handle: Option<RequestAnimationFrameHandle>,
 }
 
@@ -93,7 +99,7 @@ impl Graphics {
         width: POINTER_LINE_WIDTH,
         color: POINTER_COLOR,
       },
-      left_button: Button {
+      button_left: Button {
         coordinates: Coordinates {
           x: canvas_center.x - button.width - (button_margin / 2.0),
           y: button.coordinates.y,
@@ -102,7 +108,7 @@ impl Graphics {
         width: button.width,
         color: button.color,
       },
-      right_button: Button {
+      button_right: Button {
         coordinates: Coordinates {
           x: canvas_center.x + (button_margin / 2.0),
           y: button.coordinates.y,
@@ -126,8 +132,8 @@ impl Graphics {
   }
 
   pub fn draw_buttons(&self) {
-    self.left_button.draw(&self.canvas);
-    self.right_button.draw(&self.canvas);
+    self.button_left.draw(&self.canvas);
+    self.button_right.draw(&self.canvas);
   }
 
   fn clear(&self) {
@@ -145,7 +151,7 @@ impl Graphics {
     self.pointer_circle.radius = distance(&self.pointer_line.start, &self.pointer_line.end);
   }
 
-  pub fn is_inside_center(&self, x: f64, y: f64) -> bool {
+  fn is_inside_center(&self, x: f64, y: f64) -> bool {
     distance(&self.center.coordinates, &Coordinates { x, y }) < self.center.radius
   }
 
@@ -181,6 +187,17 @@ impl Graphics {
         y + self.center.radius
       },
     )
+  }
+
+  pub fn element_hit(&self, x: f64, y: f64) -> Option<Element> {
+    if self.is_inside_center(x, y) {
+      return Some(Element::Center);
+    } else if self.button_left.contains(x, y) {
+      return Some(Element::ButtonLeft);
+    } else if self.button_right.contains(x, y) {
+      return Some(Element::ButtonRight);
+    }
+    None
   }
 }
 

@@ -11,6 +11,11 @@ use stdweb::web::event::{SocketCloseEvent, SocketErrorEvent, SocketMessageEvent,
 const THROTTLE_TIME_MILIS: u32 = 20;
 const SENSITIVITY: u32 = 10;
 
+pub enum Mouse {
+  Left,
+  Right,
+}
+
 pub struct Transmitter {
   ws_url: String,
   ws: WebSocket,
@@ -75,10 +80,11 @@ impl Transmitter {
     }
   }
 
-  pub fn start_emit(&self, rc: Rc<RefCell<Transmitter>>) {
+  pub fn start_move(&self, rc: Rc<RefCell<Transmitter>>) {
     let Coordinates { x, y } = rc.borrow().get_adapted_coordinates();
     if self.ws.ready_state() == SocketReadyState::Open && self.should_emit {
       let message = object! {
+        type: "move",
         x: x,
         y: y
       };
@@ -86,7 +92,7 @@ impl Transmitter {
     }
     if self.activated {
       set_timeout(
-        move || rc.borrow().start_emit(rc.clone()),
+        move || rc.borrow().start_move(rc.clone()),
         THROTTLE_TIME_MILIS as u32,
       );
     }
@@ -114,5 +120,15 @@ impl Transmitter {
   pub fn update(&mut self, x: i32, y: i32, should_emit: bool) {
     self.coordinates = Coordinates { x, y };
     self.should_emit = should_emit;
+  }
+
+  pub fn click(&self, button: Mouse) {
+    let message = object! {
+      type: match button {
+        Mouse::Left => "click_left",
+        Mouse::Right => "click_right"
+      }
+    };
+    self.ws.send_text(&message.dump()).unwrap();
   }
 }

@@ -1,13 +1,13 @@
 mod graphics;
 mod transmitter;
 
-use graphics::Graphics;
+use graphics::{Element, Graphics};
 use std::cell::RefCell;
 use std::rc::Rc;
 use stdweb::traits::*;
 use stdweb::web::event::{TouchEnd, TouchMove, TouchStart};
 use stdweb::web::{window, Touch};
-use transmitter::Transmitter;
+use transmitter::{Mouse, Transmitter};
 
 macro_rules! enclose {
   ( ($( $x:ident ),*) $y:expr ) => {
@@ -34,7 +34,10 @@ fn main() {
       .borrow_mut()
       .set_touch_coordinates(x, y);
     let (dx, dy) = graphics.borrow().offset_from_center();
-    let should_emit = !graphics.borrow().is_inside_center(x, y);
+    let should_emit = match graphics.borrow().element_hit(x, y) {
+      Some(Element::Center) => false,
+      _ => true
+    };
     transmitter.borrow_mut().update(dx as i32, dy as i32, should_emit);
   }));
 
@@ -42,13 +45,17 @@ fn main() {
     let mut graphics_m = graphics.borrow_mut();
     let touch = &event.touches()[0];
     let (x, y) = get_touch_coordinates(touch);
-    let is_inside_center = graphics_m.is_inside_center(x, y);
-    if is_inside_center {
-      transmitter.borrow_mut().update(0, 0, !is_inside_center);
-      transmitter.borrow_mut().activate();
-      transmitter.borrow().start_emit(transmitter.clone());
-      graphics_m.set_touch_coordinates(x, y);
-      graphics_m.animate(graphics.clone());
+    match graphics_m.element_hit(x, y) {
+      Some(Element::Center) => {
+        transmitter.borrow_mut().update(0, 0, false);
+        transmitter.borrow_mut().activate();
+        transmitter.borrow().start_move(transmitter.clone());
+        graphics_m.set_touch_coordinates(x, y);
+        graphics_m.animate(graphics.clone());
+      },
+      Some(Element::ButtonLeft) => transmitter.borrow().click(Mouse::Left),
+      Some(Element::ButtonRight) => transmitter.borrow().click(Mouse::Right),
+      _ => ()
     }
   }));
 
